@@ -13,21 +13,12 @@
  * MOTOR CONTROL
  */
 // TIMER PWM
-#ifdef CARTE_MOTEUR
-#define CONST_PWM_PRESCALER  1
-#define CONST_PWM_AUTORELOAD 2000
+#define CONST_PWM_PRESCALER  240 // 5us resolution : 48MHz/240
+#define CONST_PWM_AUTORELOAD 4000 // 20ms PWM period : 4000*5us
 #define CONST_PWM_REPETITION 1
-#define CONST_PWM_MAX        2000
-// ASSERVISSEMENT
-#define MOTION_CONTROL_FREQ ((int32_t)(500)) // Hz
-#endif
-#ifdef CARTE_SERVO
-#define CONST_PWM_PRESCALER  480 // 100kHz => 10us de resolution pour servos
-#define CONST_PWM_PERIOD ((uint16_t)2000) // Cycles
-#define CONST_PWM_AUTORELOAD 2000 //100kHz/2000 = 50hz
-#define CONST_PWM_REPETITION 1
-#define CONST_PWM_MAX 2000
-#endif
+#define CONST_PWM_MAX        4000
+#define CONST_PWM_PERIOD_US  20000
+
 /*
  * COMMUNICATIONS
  */
