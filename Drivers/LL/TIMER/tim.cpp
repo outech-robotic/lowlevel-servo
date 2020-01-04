@@ -140,16 +140,16 @@ void PWM_write(GPIO_Pin& pin, uint16_t value){
   if(pin.port == GPIOA){
   switch(pin.pin){
     case LL_GPIO_PIN_6: //PA6
-      LL_TIM_OC_SetCompareCH1(TIM16, value); break;
+      LL_TIM_OC_SetCompareCH1(TIM3, value); break;
     case LL_GPIO_PIN_7: //PA7
-      LL_TIM_OC_SetCompareCH1(TIM1, value); break;
+      LL_TIM_OC_SetCompareCH2(TIM3, value); break;
     default: while(1);
     }
   }
   else if(pin.port == GPIOB){
 	  switch(pin.pin){
 	    case LL_GPIO_PIN_0: //PB0
-	      LL_TIM_OC_SetCompareCH2(TIM1, value); break;
+	      LL_TIM_OC_SetCompareCH3(TIM3, value); break;
 	    default: while(1);
 	    }
   }
