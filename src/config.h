@@ -62,4 +62,29 @@
 #define CAN_MSG_SERVO_POS       (0b0000)
 #define CAN_MSG_SERVO_POS_WIDTH (4)
 
+
+/**
+ * Project Specific Pins
+ */
+// ENCODERS
+#define PIN_COD_L_A PB4
+#define PIN_COD_L_B PB5
+#define PIN_COD_R_A PA15
+#define PIN_COD_R_B PB3
+
+// CAN BUS
+#define PIN_CAN_RX PA11
+#define PIN_CAN_TX PA12
+
+// DEBUG USART1 PORT
+#define PIN_USART1_TX PA9
+#define PIN_USART1_RX PA10
+
+// PA6 - TIM3_CH1
+// PA7 - TIM3_CH2
+// PB0 - TIM3_CH3
+#define PIN_PWM_1 PA6
+#define PIN_PWM_2 PA7
+#define PIN_PWM_3 PB0
+
 #endif /* UTILITY_CONFIG_H_ */

@@ -1,7 +1,7 @@
+#include "stm32f0xx_ll_usart.h"
 #include <GPIO/gpio.h>
 #include "USART/usart.hpp"
-#include "stm32f0xx_ll_usart.h"
-
+#include "config.h"
 
 
 void MX_USART1_UART_Init(void)
@@ -13,8 +13,8 @@ void MX_USART1_UART_Init(void)
   /* Peripheral clock enable */
   LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_USART1);
   
-  gpio_port_enable_clock(PIN_USART1_TX.port);
   gpio_port_enable_clock(PIN_USART1_RX.port);
+  gpio_port_enable_clock(PIN_USART1_TX.port);
   /**USART1 GPIO Configuration  
   PA9   ------> USART1_TX
   PA10   ------> USART1_RX 

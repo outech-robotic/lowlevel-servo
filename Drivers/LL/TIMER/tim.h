@@ -47,6 +47,9 @@ void MX_TIM17_Init(void);
 int16_t COD_get_left();
 int32_t COD_get_right();
 void PWM_write(GPIO_Pin& pin, uint16_t value);
+void PWM_write_us(GPIO_Pin& pin, uint16_t width_us);
+void PWM_write_angle(GPIO_Pin& pin, uint8_t angle);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
