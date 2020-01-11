@@ -156,7 +156,6 @@ void MX_CAN_Init(void)
    */
   CAN_FilterTypeDef filterConfig;
 
-#ifdef CARTE_SERVO
   filterConfig.FilterBank = 0;
   filterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
   filterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
@@ -166,19 +165,7 @@ void MX_CAN_Init(void)
   filterConfig.FilterMaskIdLow = 0x0000;
   filterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
   filterConfig.FilterActivation = ENABLE;
-#endif
 
-#ifdef CARTE_MOTEUR
-  filterConfig.FilterBank = 0;
-  filterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  filterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  filterConfig.FilterIdHigh = CAN_PKT_ID(CAN_PIPE_MOTOR, 0) << CAN_STDID_SHIFT;
-  filterConfig.FilterIdLow = 0x0000;
-  filterConfig.FilterMaskIdHigh = CAN_PKT_ID(CAN_PIPE_MASK, 0); // ACCEPT ALL PROPULSION MESSAGES
-  filterConfig.FilterMaskIdLow = 0x0000;
-  filterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  filterConfig.FilterActivation = ENABLE;
-#endif
   if((res = HAL_CAN_ConfigFilter(&hcan, &filterConfig)) != HAL_OK){
       while(1);
   }

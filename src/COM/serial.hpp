@@ -50,7 +50,8 @@ class Serial{
         gpio_init_struct.Alternate=LL_GPIO_AF_1; //Only works if not pins PB6/7
         gpio_init_struct.Mode=LL_GPIO_MODE_ALTERNATE;
         gpio_init_struct.Speed=LL_GPIO_SPEED_FREQ_HIGH;
-        gpio_init_struct.Pull=LL_GPIO_PULL_UP;
+        gpio_init_struct.Pull=LL_GPIO_PULL_NO;
+        gpio_init_struct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
         gpio_init_struct.Pin=tx.pin;
         TRY(LL_GPIO_Init(tx.port, &gpio_init_struct), ErrorStatus::SUCCESS);    //TX config
         gpio_init_struct.Pin=rx.pin;
@@ -90,9 +91,9 @@ public:
         this->mPin_rx = &PIN_USART1_RX;
         this->mPin_tx = &PIN_USART1_TX;
         this->mBaudrate=baudrate;
-        timeout_ms = 50;
-        TRY(this->init_gpios(PIN_USART1_RX, PIN_USART1_TX), ErrorStatus::SUCCESS);
-        TRY(this->init_usart(baudrate), ErrorStatus::SUCCESS);
+        timeout_ms = 2000;
+        this->init_gpios(PIN_USART1_RX, PIN_USART1_TX);
+        this->init_usart(baudrate);
         return true;
     }
 
