@@ -161,7 +161,7 @@ void PWM_write_us(GPIO_Pin& pin, uint16_t width_us){
 }
 
 void PWM_write_angle(GPIO_Pin& pin, uint8_t angle){
-  if(angle < 180){
+  if(angle <= 180){
     uint16_t width_us = 1000 + ((angle * 1000))/180;
     PWM_write_us(pin, width_us);
   }

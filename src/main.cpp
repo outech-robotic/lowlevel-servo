@@ -77,15 +77,14 @@ int main(void)
     if((CAN_receive_packet(&rx_msg)) == HAL_OK){
       printf("RECV: ");
       CAN_print_rx_pkt(&rx_msg);
-      if(CAN_PKT_MESSAG_ID(rx_msg.header.StdId) == CAN_MSG_SERVO_POS){
+      if(CAN_PKT_MESSAG_ID(rx_msg.header.StdId) == (CAN_MSG_SERVO_POS<<CAN_BOARD_ID_WIDTH | CAN_BOARD_ID)){
         uint8_t servo_id = rx_msg.data.u8[0];
         uint8_t value = rx_msg.data.u8[1];
-        serial.printf("SERVO %u POS %u\r\n", servo_id, value);
-        uint16_t val_16b = ((uint32_t)value*CONST_PWM_MAX)/255;
+        serial.printf("Angle = %u sur servo %u\r\n", value, servo_id);
         switch(servo_id){
-          case 0 : PWM_write(PIN_PWM_1, val_16b); break;
-          case 1 : PWM_write(PIN_PWM_2, val_16b); break;
-          case 2 : PWM_write(PIN_PWM_3, val_16b); break;
+          case 1 : PWM_write_angle(PIN_PWM_1, value); break;
+          case 2 : PWM_write_angle(PIN_PWM_2, value); break;
+          case 3 : PWM_write_angle(PIN_PWM_3, value); break;
           default: serial.printf("WRONG SERVO ID\r\n"); break;
         }
       }

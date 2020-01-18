@@ -161,7 +161,7 @@ void MX_CAN_Init(void)
   filterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
   filterConfig.FilterIdHigh = CAN_PKT_ID(CAN_PIPE_SERVO, CAN_MSG_SERVO_POS<<CAN_BOARD_ID_WIDTH | (CAN_BOARD_ID&CAN_BOARD_ID_MASK)) << CAN_STDID_SHIFT;
   filterConfig.FilterIdLow = 0x0000;
-  filterConfig.FilterMaskIdHigh = CAN_PKT_ID(CAN_PIPE_MASK, CAN_BOARD_ID_MASK); //ACCEPT ALL SERVO MESSAGES FOR THIS BOARD
+  filterConfig.FilterMaskIdHigh = CAN_PKT_ID(CAN_PIPE_MASK, CAN_BOARD_ID_MASK) << CAN_STDID_SHIFT; //ACCEPT ALL SERVO MESSAGES FOR THIS BOARD
   filterConfig.FilterMaskIdLow = 0x0000;
   filterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
   filterConfig.FilterActivation = ENABLE;

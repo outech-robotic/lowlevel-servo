@@ -23,9 +23,9 @@
  * COMMUNICATIONS
  */
 //CAN CONFIG
-#define CONST_CAN_MODE_LOOPBACK
-#define CONST_CAN_SPEED_100K
-//#define CONST_CAN_SPEED_1M
+//#define CONST_CAN_MODE_LOOPBACK
+//#define CONST_CAN_SPEED_100K
+#define CONST_CAN_SPEED_1M
 
 //USART CONFIG
 #define CONST_USART_BAUDRATE (9600)
@@ -46,7 +46,7 @@
 #define CAN_PIPE_SENSOR      (0b10)
 #define CAN_PIPE_SERVO       (0b11)
 
-#define CAN_BOARD_ID         (0b00000) // used with in message id for sensor or servo messages (5bits out of 9)
+#define CAN_BOARD_ID         (0b00001) // used with in message id for sensor or servo messages (5bits out of 9)
 #define CAN_BOARD_ID_WIDTH   (5)
 #define CAN_BOARD_ID_MASK     MAKE_MASK(CAN_BOARD_ID_WIDTH)
 
