@@ -18,7 +18,7 @@ int main(void)
   /**********************************************************************
    *                             SETUP
    **********************************************************************/
-  Metro can_wait(100);
+  Metro wait_heartbeat(100);
 
   char str[USART_TX_BUFFER_SIZE]="";
   uint16_t data = 0;
@@ -31,8 +31,6 @@ int main(void)
   // Initialize all peripherals
   MX_CAN_Init();
   MX_TIM3_Init(); // PWM
-  //MX_TIM16_Init();
-//  MX_USART1_UART_Init();
   serial.init(115200);
   serial.set_timeout(2000);
 
@@ -43,6 +41,13 @@ int main(void)
    **********************************************************************/
   while (1)
   {
+    //Heartbeat to HL
+    if(wait_heartbeat.check()){
+      if(CAN_send_packet(&CAN_TX_HEARTBEAT) != HAL_OK){
+        serial.printf("ERROR ON CAN SEND HEARTBEAT\r\n");
+      }
+    }
+    //Manage serial messages
     str[0]=0;
     if(serial.available()){
       if(serial.read(str, 10)){
@@ -74,14 +79,16 @@ int main(void)
         }
       }
     }
+
+    // Manage CAN messages
     if((CAN_receive_packet(&rx_msg)) == HAL_OK){
       printf("RECV: ");
       CAN_print_rx_pkt(&rx_msg);
       if(CAN_PKT_MESSAG_ID(rx_msg.header.StdId) == (CAN_MSG_SERVO_POS<<CAN_BOARD_ID_WIDTH | CAN_BOARD_ID)){
-        uint8_t servo_id = rx_msg.data.u8[0];
+        uint8_t id = rx_msg.data.u8[0];
         uint8_t value = rx_msg.data.u8[1];
-        serial.printf("Angle = %u sur servo %u\r\n", value, servo_id);
-        switch(servo_id){
+        serial.printf("Angle = %u sur servo %u\r\n", value, id);
+        switch(id){
           case 1 : PWM_write_angle(PIN_PWM_1, value); break;
           case 2 : PWM_write_angle(PIN_PWM_2, value); break;
           case 3 : PWM_write_angle(PIN_PWM_3, value); break;

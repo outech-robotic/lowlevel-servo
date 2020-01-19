@@ -46,7 +46,7 @@
 #define CAN_PIPE_SENSOR      (0b10)
 #define CAN_PIPE_SERVO       (0b11)
 
-#define CAN_BOARD_ID         (0b00001) // used with in message id for sensor or servo messages (5bits out of 9)
+#define CAN_BOARD_ID         (3) // used with message id (5 LSb out of 9)
 #define CAN_BOARD_ID_WIDTH   (5)
 #define CAN_BOARD_ID_MASK     MAKE_MASK(CAN_BOARD_ID_WIDTH)
 
@@ -56,8 +56,9 @@
 #define CAN_MSG_MOT_MOVE_END    (0b000001)
 #define CAN_MSG_MOT_MOVE        (0b000010)
 #define CAN_MSG_MOT_COD_POS     (0b000011)
+
 //HL MESSAGES
-#define CAN_MSG_HEARTBEAT       (0b101010)
+#define CAN_MSG_HEARTBEAT       (0b1010)
 //SERVO MESSAGES
 #define CAN_MSG_SERVO_POS       (0b0000)
 #define CAN_MSG_SERVO_POS_WIDTH (4)
