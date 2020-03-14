@@ -82,8 +82,6 @@ int main(void)
 
     // Manage CAN messages
     if((CAN_receive_packet(&rx_msg)) == HAL_OK){
-      printf("RECV: ");
-      CAN_print_rx_pkt(&rx_msg);
       if(CAN_PKT_MESSAG_ID(rx_msg.header.StdId) == (CAN_MSG_SERVO_POS<<CAN_BOARD_ID_WIDTH | CAN_BOARD_ID)){
         uint8_t id = rx_msg.data.u8[0];
         uint8_t value = rx_msg.data.u8[1];

@@ -47,31 +47,44 @@
 #define CAN_PIPE_SERVO       (0b11)
 
 #define CAN_BOARD_ID         (3) // used with message id (5 LSb out of 9)
-#define CAN_BOARD_ID_WIDTH   (5)
+#define CAN_BOARD_ID_WIDTH   (4)
 #define CAN_BOARD_ID_MASK     MAKE_MASK(CAN_BOARD_ID_WIDTH)
+
 
 //MESSAGE IDs
 //PROPULSION MESSAGES
-#define CAN_MSG_MOT_STOP        (0b000000)
-#define CAN_MSG_MOT_MOVE_END    (0b000001)
-#define CAN_MSG_MOT_MOVE        (0b000010)
-#define CAN_MSG_MOT_COD_POS     (0b000011)
+#define CAN_MSG_MOT_STOP        (0b00000)
+#define CAN_MSG_MOT_MOVE_END    (0b00001)
+#define CAN_MSG_MOT_MOVE        (0b00010)
+#define CAN_MSG_MOT_COD_POS     (0b00011)
+
+//PROPULSION DEBUG/SETTINGS
+#define CAN_MSG_MOT_COD_SPEED   (0b10000)
+#define CAN_MSG_MOT_LIMITS      (0b10011)
+#define CAN_MSG_MOT_SET_KP      (0b10100)
+#define CAN_MSG_MOT_SET_KI      (0b10101)
+#define CAN_MSG_MOT_SET_KD      (0b10110)
+#define CAN_MSG_MOT_MODE        (0b10111)
+
 
 //HL MESSAGES
+#define CAN_MSG_DEBUG_DATA      (0b10001)
 #define CAN_MSG_HEARTBEAT       (0b1010)
+
+
 //SERVO MESSAGES
-#define CAN_MSG_SERVO_POS       (0b0000)
-#define CAN_MSG_SERVO_POS_WIDTH (4)
+#define CAN_MSG_SERVO_POS       (0b00000)
+#define CAN_MSG_SERVO_POS_WIDTH (5)
+
+
+//SENSOR MESSAGES
+#define CAN_MSG_SENSOR          (0b00000)
+
 
 
 /**
  * Project Specific Pins
  */
-// ENCODERS
-#define PIN_COD_L_A PB4
-#define PIN_COD_L_B PB5
-#define PIN_COD_R_A PA15
-#define PIN_COD_R_B PB3
 
 // CAN BUS
 #define PIN_CAN_RX PA11
