@@ -1,52 +1,137 @@
-#include "TIMER/tim.h"
-#include "CAN/can.h"
-#include "GPIO/gpio.h"
-#include "UTILITY/Metro.hpp"
-#include "UTILITY/timing.h"
-#include "USART/usart.hpp"
-#include "COM/serial.hpp"
-#include <stdio.h>
-#include <cstdlib>
-#include "UTILITY/macros.h"
+#include "peripheral/tim.h"
+#include "peripheral/can.h"
+#include "peripheral/gpio.h"
+#include "utility/Metro.hpp"
+#include "utility/timing.h"
+#include "com/serial.hpp"
+#include "utility/macros.h"
 #include "config.h"
+#include "com/can_pb.hpp"
+
+#include <cstdlib>
+
+#define STR(x)  #x
+#define XSTR(x) STR(x)
+
 
 can_rx_msg rx_msg;
 Serial serial;
+Metro wait_heartbeat(500);
+
+Can_PB canpb(CONST_CAN_RX_ID, CONST_CAN_TX_ID);
+
+GPIO_Pin pins_pwm[3] = {PIN_PWM_1, PIN_PWM_2, PIN_PWM_3};
 
 int main(void)
 {
-  /**********************************************************************
-   *                             SETUP
-   **********************************************************************/
-  Metro wait_heartbeat(100);
+  // Initialize all peripherals
+  MX_CAN_Init();
+  MX_TIM3_Init(); // PWM
+  const uint16_t mini = 600;
+  const uint16_t maxi = 2200;
+  uint16_t curr = (mini+maxi)/2;
+  int8_t step = 10;
+  while(1){
+    delay_ms(50);
+    for(int i=0; i < 3; i++){
+      PWM_write_us(pins_pwm[i], curr);
+    }
+    curr+= step;
+    if(curr > maxi){
+      curr = maxi;
+      step = -step;
+    }
+    if(curr < mini){
+      curr = mini;
+      step = -step;
+    }
 
+  }
+
+ /**********************************************************************
+  *                 SERIAL INTERFACE Variables & setup
+  **********************************************************************/
   char str[USART_TX_BUFFER_SIZE]="";
   uint16_t data = 0;
   uint16_t servo_id = 0;
   bool servo_selected = false;
-
-  // Initialize timing utility functions (delay, millis...)
-  Timing_init();
-
-  // Initialize all peripherals
-  MX_CAN_Init();
-  MX_TIM3_Init(); // PWM
   serial.init(115200);
-  serial.set_timeout(2000);
+  serial.set_timeout(2000); // 2sec timeout to write characters to serial
+  if(serial.available()>0){
+    serial.read(str, 1); // If there was a byte received, flush it
+  }
+ /**********************************************************************
+  *                   CAN INTERFACE Variables & setup
+  **********************************************************************/
+  can_rx_msg can_raw_msg;
+  // Proto Buffers Messages
+  BusMessage msg_rx = BusMessage_init_zero;
+  BusMessage msg_heartbeat = BusMessage_init_zero;
+  msg_heartbeat.message_content.heartbeat = HeartbeatMsg_init_zero;
+  msg_heartbeat.which_message_content = BusMessage_heartbeat_tag;
+
+  LL_RCC_ClocksTypeDef clocks;
+  LL_RCC_GetSystemClocksFreq(&clocks);
+
+  pinMode(PB3,  PinDirection::OUTPUT);
+  digitalWrite(PB3,  GPIO_HIGH);
 
   serial.printf("Setup done.\r\n");
 
-  /**********************************************************************
-   *                             MAIN LOOP
-   **********************************************************************/
+ /**********************************************************************
+  *                             MAIN LOOP
+  **********************************************************************/
   while (1)
   {
-    //Heartbeat to HL
-    if(wait_heartbeat.check()){
-      if(CAN_send_packet(&CAN_TX_HEARTBEAT) != HAL_OK){
-        serial.printf("ERROR ON CAN SEND HEARTBEAT\r\n");
+ /**********************************************************************
+  *                   CAN INTERFACE
+  **********************************************************************/
+    // Update ISOTP server
+    if(CAN_receive_packet(&can_raw_msg) == HAL_OK){
+      if(canpb.match_id(can_raw_msg.header.StdId)){
+        canpb.update_rx_msg(can_raw_msg);
       }
     }
+    canpb.update();
+
+    // Order reception
+    if(canpb.is_rx_available()){
+      if(canpb.receive_msg(msg_rx) == Can_PB::CAN_PB_RET_OK){
+        switch(msg_rx.which_message_content){
+          //Sets a pin at a certain ID (0, 1, 2) as a PWM servo controller pin (50Hz PWM - 1...2ms width)
+          case BusMessage_servo_tag:
+            serial.println("Packet Received: Servo Movement");
+            serial.printf("ID: %u; Angle: %u°\r\n", msg_rx.message_content.servo.id, msg_rx.message_content.servo.angle);
+            PWM_write_angle(pins_pwm[msg_rx.message_content.servo.id], msg_rx.message_content.servo.angle);
+            break;
+
+          case BusMessage_pumpAndValve_tag:
+            serial.println("Packet Received: PumpAndValve");
+            serial.printf("ID: %u; ON/OFF: %s\r\n", msg_rx.message_content.pumpAndValve.id, msg_rx.message_content.pumpAndValve.on?"ON":"OFF");
+            PWM_write(pins_pwm[msg_rx.message_content.pumpAndValve.id], msg_rx.message_content.pumpAndValve.on? CONST_PWM_MAX : 0);
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+
+    //Heartbeat to HL
+    if(wait_heartbeat.check()){
+      if(canpb.is_tx_available()){
+        togglePin(PB3);
+        if(canpb.send_msg(msg_heartbeat) != Can_PB::CAN_PB_RET_OK){
+          serial.print("ERROR: SENDING HEARTBEAT\r\n");
+        }
+      }
+    }
+
+
+ /**********************************************************************
+  *                 SERIAL INTERFACE
+  **********************************************************************/
     //Manage serial messages
     str[0]=0;
     if(serial.available()){
@@ -64,35 +149,18 @@ int main(void)
           }
         }
         else{
-          if(data > 180){
+          if(data > 18000){
             serial.printf("Entrer angle entre 0 et 180 inclus\r\n");
           }
           else{
             serial.printf("Angle = %u sur servo %u\r\n", data, servo_id);
             switch(servo_id){
-              case 1 : PWM_write_angle(PIN_PWM_1, data); break;
-              case 2 : PWM_write_angle(PIN_PWM_2, data); break;
-              case 3 : PWM_write_angle(PIN_PWM_3, data); break;
+              case 1 : PWM_write_us(PIN_PWM_1, data); break;
+              case 2 : PWM_write_us(PIN_PWM_2, data); break;
+              case 3 : PWM_write_us(PIN_PWM_3, data); break;
             }
           }
           servo_selected = false;
-        }
-      }
-    }
-
-    // Manage CAN messages
-    if((CAN_receive_packet(&rx_msg)) == HAL_OK){
-      printf("RECV: ");
-      CAN_print_rx_pkt(&rx_msg);
-      if(CAN_PKT_MESSAG_ID(rx_msg.header.StdId) == (CAN_MSG_SERVO_POS<<CAN_BOARD_ID_WIDTH | CAN_BOARD_ID)){
-        uint8_t id = rx_msg.data.u8[0];
-        uint8_t value = rx_msg.data.u8[1];
-        serial.printf("Angle = %u sur servo %u\r\n", value, id);
-        switch(id){
-          case 1 : PWM_write_angle(PIN_PWM_1, value); break;
-          case 2 : PWM_write_angle(PIN_PWM_2, value); break;
-          case 3 : PWM_write_angle(PIN_PWM_3, value); break;
-          default: serial.printf("WRONG SERVO ID\r\n"); break;
         }
       }
     }

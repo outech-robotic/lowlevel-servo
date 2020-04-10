@@ -11,14 +11,14 @@
 
 #include <stm32f0xx_ll_bus.h>
 #include <stm32f0xx_ll_usart.h>
+#include "utility/macros.h"
+#include "utility/ring_buffer.hpp"
+#include "utility/timing.h"
+#include "peripheral/gpio.h"
 
 #include <cstdarg>
 #include <cstdio>
 
-#include "GPIO/gpio.h"
-#include "UTILITY/timing.h"
-#include "UTILITY/ring_buffer.hpp"
-#include "UTILITY/macros.h"
 
 #define USART_TX_BUFFER_SIZE (64)
 
@@ -30,7 +30,7 @@ class Serial{
     GPIO_Pin* mPin_tx;
     uint32_t mBaudrate;
     USART_TypeDef* usart_x;
-    uint32_t timeout_ms=100;
+    uint32_t timeout_ms;
 
     /**
      * @brief Initializes GPIOs associated with the USART
@@ -41,7 +41,7 @@ class Serial{
      * @return false if failure
      */
     bool init_gpios(GPIO_Pin& rx, GPIO_Pin& tx){
-        LL_GPIO_InitTypeDef  gpio_init_struct={0};
+        LL_GPIO_InitTypeDef  gpio_init_struct={};
         // GPIO Peripheral clock enable
         gpio_port_enable_clock(rx.port);
         gpio_port_enable_clock(tx.port);
@@ -60,7 +60,7 @@ class Serial{
     }
 
     bool init_usart(uint32_t baudrate) {
-        LL_USART_InitTypeDef usart_init_struct;
+        LL_USART_InitTypeDef usart_init_struct = {};
         LL_USART_StructInit(&usart_init_struct);
         usart_init_struct.BaudRate  = baudrate;
         usart_init_struct.DataWidth = LL_USART_DATAWIDTH_8B;
@@ -86,13 +86,20 @@ public:
      * @return false else
      */
     bool init(uint32_t baudrate=115200){
+#ifdef NUCLEO
+        LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
+        this->usart_x = USART2;
+        this->mPin_rx = &PIN_USART_RX;
+        this->mPin_tx = &PIN_USART_TX;
+#else
         LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_USART1);
         this->usart_x = USART1;
-        this->mPin_rx = &PIN_USART1_RX;
-        this->mPin_tx = &PIN_USART1_TX;
+        this->mPin_rx = &PIN_USART_RX;
+        this->mPin_tx = &PIN_USART_TX;
+#endif
         this->mBaudrate=baudrate;
         timeout_ms = 2000;
-        this->init_gpios(PIN_USART1_RX, PIN_USART1_TX);
+        this->init_gpios(*this->mPin_rx, *this->mPin_tx);
         this->init_usart(baudrate);
         return true;
     }
@@ -161,7 +168,7 @@ public:
 
 
     /**
-     * Reads up to len characters from usart to str
+     * Reads up to len characters from usart to str, stops when new line
      */
     size_t read(char* str, uint32_t len=1){
         size_t read_size=0;

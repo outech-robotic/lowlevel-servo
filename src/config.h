@@ -8,16 +8,16 @@
 #ifndef UTILITY_CONFIG_H_
 #define UTILITY_CONFIG_H_
 
-#define MAKE_MASK(length) ((1<<length)-1)
 /*
  * MOTOR CONTROL
  */
 // TIMER PWM
-#define CONST_PWM_PRESCALER  240 // 5us resolution : 48MHz/240
-#define CONST_PWM_AUTORELOAD 4000 // 20ms PWM period : 4000*5us
-#define CONST_PWM_REPETITION 1
-#define CONST_PWM_MAX        4000
-#define CONST_PWM_PERIOD_US  20000
+#define CONST_PWM_PRESCALER  (240)  // 5us resolution : 48MHz/240
+#define CONST_PWM_AUTORELOAD (4000) // 20ms PWM period : 4000*5us
+#define CONST_PWM_REPETITION (1)
+#define CONST_PWM_MAX        (CONST_PWM_AUTORELOAD)
+#define CONST_US_PER_S       (1000000)
+#define CONST_PWM_PERIOD_US  (CONST_US_PER_S)/(F_CPU/(CONST_PWM_PRESCALER*CONST_PWM_AUTORELOAD*CONST_PWM_REPETITION))
 
 /*
  * COMMUNICATIONS
@@ -31,55 +31,33 @@
 #define CONST_USART_BAUDRATE (9600)
 
 //BUFFER SIZE USED IN ISR
-#define CONST_CAN_BUFFER_SIZE (16)
+// IDs used by board on CAN interface
+#define CONST_CAN_BOARD_ID    ((uint16_t)0)                   // 10 bits  unique board ID
+#define CONST_CAN_RX_ID       (CONST_CAN_BOARD_ID << 1 | 1)   // 11 bits ID, LSb is a 1 for (Master) ->  (This)  transfers
+#define CONST_CAN_TX_ID       (CONST_CAN_BOARD_ID << 1)       // 11 bits ID, LSb is a 0 for  (This)  -> (Master) transfers
+#define CONST_CAN_STD_SHIFT   (5)
 
-//CAN IDS
-#define CAN_PIPE_WIDTH        (2)
-#define CAN_MESSAGE_WIDTH     (9)
-#define CAN_PIPE_MASK         (MAKE_MASK(CAN_PIPE_WIDTH)<<CAN_MESSAGE_WIDTH)
-#define CAN_MESSAGE_MASK       MAKE_MASK(CAN_MESSAGE_WIDTH)
-#define CAN_STDID_SHIFT       (5)
-
-//PIPE IDs
-#define CAN_PIPE_MOTOR       (0b00)
-#define CAN_PIPE_HL          (0b01)
-#define CAN_PIPE_SENSOR      (0b10)
-#define CAN_PIPE_SERVO       (0b11)
-
-#define CAN_BOARD_ID         (3) // used with message id (5 LSb out of 9)
-#define CAN_BOARD_ID_WIDTH   (5)
-#define CAN_BOARD_ID_MASK     MAKE_MASK(CAN_BOARD_ID_WIDTH)
-
-//MESSAGE IDs
-//PROPULSION MESSAGES
-#define CAN_MSG_MOT_STOP        (0b000000)
-#define CAN_MSG_MOT_MOVE_END    (0b000001)
-#define CAN_MSG_MOT_MOVE        (0b000010)
-#define CAN_MSG_MOT_COD_POS     (0b000011)
-
-//HL MESSAGES
-#define CAN_MSG_HEARTBEAT       (0b1010)
-//SERVO MESSAGES
-#define CAN_MSG_SERVO_POS       (0b0000)
-#define CAN_MSG_SERVO_POS_WIDTH (4)
+//BUFFER SIZE USED IN ISR
+#define CONST_CAN_BUFFER_SIZE ((uint16_t)16)
+#define CONST_ISOTP_BUFF_SIZE ((size_t)512)
+#define CONST_PB_BUFF_SIZE    ((size_t)8)
 
 
 /**
  * Project Specific Pins
  */
-// ENCODERS
-#define PIN_COD_L_A PB4
-#define PIN_COD_L_B PB5
-#define PIN_COD_R_A PA15
-#define PIN_COD_R_B PB3
-
 // CAN BUS
 #define PIN_CAN_RX PA11
 #define PIN_CAN_TX PA12
 
 // DEBUG USART1 PORT
-#define PIN_USART1_TX PA9
-#define PIN_USART1_RX PA10
+#ifdef NUCLEO
+#define PIN_USART_TX PA2
+#define PIN_USART_RX PA15
+#else
+#define PIN_USART_TX PA9
+#define PIN_USART_RX PA10
+#endif
 
 // PA6 - TIM3_CH1
 // PA7 - TIM3_CH2

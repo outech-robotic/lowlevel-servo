@@ -53,6 +53,4 @@ GPIO_Pin_Extern_Def(B,13);
 GPIO_Pin_Extern_Def(B,14);
 GPIO_Pin_Extern_Def(B,15);
 
-
-
 #endif /* LL_GPIO_GPIO_PINS_H_ */
