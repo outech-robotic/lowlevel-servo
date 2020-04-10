@@ -60,7 +60,6 @@ public:
     isotp_on_can_message(&isotp_link, msg.data.u8, msg.header.DLC);
   }
 
-
   int update(){
     // Update Iso-TP status and packets
     isotp_poll(&isotp_link);

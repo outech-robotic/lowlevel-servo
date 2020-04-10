@@ -27,26 +27,7 @@ int main(void)
   // Initialize all peripherals
   MX_CAN_Init();
   MX_TIM3_Init(); // PWM
-  const uint16_t mini = 600;
-  const uint16_t maxi = 2200;
-  uint16_t curr = (mini+maxi)/2;
-  int8_t step = 10;
-  while(1){
-    delay_ms(50);
-    for(int i=0; i < 3; i++){
-      PWM_write_us(pins_pwm[i], curr);
-    }
-    curr+= step;
-    if(curr > maxi){
-      curr = maxi;
-      step = -step;
-    }
-    if(curr < mini){
-      curr = mini;
-      step = -step;
-    }
 
-  }
 
  /**********************************************************************
   *                 SERIAL INTERFACE Variables & setup
@@ -149,15 +130,15 @@ int main(void)
           }
         }
         else{
-          if(data > 18000){
+          if(data > 180){
             serial.printf("Entrer angle entre 0 et 180 inclus\r\n");
           }
           else{
             serial.printf("Angle = %u sur servo %u\r\n", data, servo_id);
             switch(servo_id){
-              case 1 : PWM_write_us(PIN_PWM_1, data); break;
-              case 2 : PWM_write_us(PIN_PWM_2, data); break;
-              case 3 : PWM_write_us(PIN_PWM_3, data); break;
+              case 1 : PWM_write_angle(PIN_PWM_1, data); break;
+              case 2 : PWM_write_angle(PIN_PWM_2, data); break;
+              case 3 : PWM_write_angle(PIN_PWM_3, data); break;
             }
           }
           servo_selected = false;
