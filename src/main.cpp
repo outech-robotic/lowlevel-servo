@@ -77,7 +77,7 @@ int main(void)
 
     // Order reception
     if(canpb.is_rx_available()){
-      if(canpb.receive_msg(msg_rx) == Can_PB::CAN_PB_RET_OK){
+      if(canpb.receive_msg(msg_rx)){
         switch(msg_rx.which_message_content){
           //Sets a pin at a certain ID (0, 1, 2) as a PWM servo controller pin (50Hz PWM - 1...2ms width)
           case BusMessage_servo_tag:
