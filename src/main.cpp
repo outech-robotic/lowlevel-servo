@@ -62,11 +62,8 @@ int main(void)
  /**********************************************************************
   *                             MAIN LOOP
   **********************************************************************/
-  while (1)
-  {
- /**********************************************************************
-  *                   CAN INTERFACE
-  **********************************************************************/
+  while (1){
+
     // Update ISOTP server
     if(CAN_receive_packet(&can_raw_msg) == HAL_OK){
       if(canpb.match_id(can_raw_msg.header.StdId)){
@@ -98,7 +95,9 @@ int main(void)
       }
     }
 
-
+ /**********************************************************************
+  *                   CAN INTERFACE
+  **********************************************************************/
     //Heartbeat to HL
     if(wait_heartbeat.check()){
       if(canpb.is_tx_available()){
@@ -108,7 +107,6 @@ int main(void)
         }
       }
     }
-
 
  /**********************************************************************
   *                 SERIAL INTERFACE
@@ -120,8 +118,8 @@ int main(void)
         data = atoi(str);
         serial.printf("Recu : %u\r\n", data);
         if(!servo_selected){
-          if(!data || data > 3){
-            serial.printf("Servo ID peut etre 1, 2 ou 3\r\n");
+          if( data > 2){
+            serial.printf("Servo ID peut etre 0, 1 ou 2\r\n");
           }
           else{
             serial.printf("Servo ID : %u\r\n", data);
@@ -135,15 +133,14 @@ int main(void)
           }
           else{
             serial.printf("Angle = %u sur servo %u\r\n", data, servo_id);
-            switch(servo_id){
-              case 1 : PWM_write_angle(PIN_PWM_1, data); break;
-              case 2 : PWM_write_angle(PIN_PWM_2, data); break;
-              case 3 : PWM_write_angle(PIN_PWM_3, data); break;
-            }
+            PWM_write_angle(pins_pwm[servo_id], data);
           }
           servo_selected = false;
         }
       }
     }
+
   }
+
+  return 0;
 }
