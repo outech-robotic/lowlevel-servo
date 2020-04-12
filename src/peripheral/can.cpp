@@ -3,14 +3,15 @@
 #include "utility/macros.h"
 #include "utility/ring_buffer.hpp"
 #include "config.h"
-
 #include <algorithm>
 
+
 // Buffer storing packets waiting for the peripheral to send them
-ring_buffer<CONST_CAN_BUFFER_SIZE, can_tx_msg> messages_tx;
+ring_buffer<CONST_CAN_BUFFER_SIZE, can_msg> messages_tx;
 
 // Buffer storing packets received by the peripheral, waiting processing by the main program
-ring_buffer<CONST_CAN_BUFFER_SIZE, can_rx_msg> messages_rx;
+ring_buffer<CONST_CAN_BUFFER_SIZE, can_msg> messages_rx;
+
 
 CAN_HandleTypeDef hcan;
 
@@ -28,32 +29,33 @@ void CAN_IRQ_TX_Empty_disable(CAN_HandleTypeDef* can){
     CLEAR_BIT(can->Instance->IER, CAN_IER_TMEIE);
 }
 
-int CAN_send_packet(uint16_t std_id, const uint8_t* data, uint8_t size, bool remote){
-	can_tx_msg msg;
-	msg.header.DLC=size;
-	msg.header.StdId=std_id;
-	msg.header.RTR=remote ? CAN_RTR_REMOTE : CAN_RTR_DATA;
-	msg.header.IDE = CAN_ID_STD;
-
-	std::copy(&data[0], &data[size], msg.data.u8);
+int CAN_send_packet(uint16_t std_id, const uint8_t* data, uint8_t size){
+	can_msg msg;
+	msg.size = size;
+	msg.id=std_id;
+  std::copy(&data[0], &data[size], msg.data.u8);
 
 	return CAN_send_packet(&msg);
 }
 
-int CAN_send_packet(can_tx_msg* msg){
-	int res=CAN_ERROR_STATUS::CAN_PKT_OK;
+int CAN_send_packet(can_msg* msg){
+  int res = CAN_ERROR_STATUS::CAN_PKT_OK;
+
+  CAN_TxHeaderTypeDef header;
+  header.DLC = msg->size;
+  header.StdId = msg->id;
+  header.IDE = CAN_ID_STD;
+  header.RTR = CAN_RTR_DATA;
+
 	uint32_t mailbox;
-	if(msg->header.DLC >8){
+	if(header.DLC >8){
 		res = CAN_ERROR_STATUS::PACKET_DLC_TOO_LARGE;
 	}
-	if(msg->header.StdId>0x7FF){
+	if(header.StdId>0x7FF){
 		res = CAN_ERROR_STATUS::PACKET_ID_TOO_LARGE;
 	}
 	if(!msg->data.u8){
 		res = CAN_ERROR_STATUS::DATA_NPE;
-	}
-	if(msg->header.IDE != CAN_ID_STD){
-		res = CAN_ERROR_STATUS::NON_STD_NOT_SUPPORTED;
 	}
   if(res >= 0){
     if(HAL_CAN_IsTxMessagePending(&hcan, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2)){
@@ -61,7 +63,7 @@ int CAN_send_packet(can_tx_msg* msg){
       res = CAN_ERROR_STATUS::CAN_PKT_OK;
     }
     else{
-      if((res = HAL_CAN_AddTxMessage(&hcan, &msg->header, msg->data.u8, &mailbox)) != HAL_OK){
+      if((res = HAL_CAN_AddTxMessage(&hcan, &header, msg->data.u8, &mailbox)) != HAL_OK){
         return CAN_ERROR_STATUS::PACKET_TX_ERROR;
       }
       CAN_IRQ_TX_Empty_enable(&hcan);
@@ -70,18 +72,21 @@ int CAN_send_packet(can_tx_msg* msg){
 	return res;
 }
 
-int CAN_receive_packet(can_rx_msg* msg){
+int CAN_receive_packet(can_msg* msg){
+  CAN_RxHeaderTypeDef header;
 	int res = HAL_ERROR;
-    if(!messages_rx.is_empty()){
-    	*msg = messages_rx.pop();
-    	res = HAL_OK;
+  if(!messages_rx.is_empty()){
+    *msg = messages_rx.pop();
+    res = HAL_OK;
+  }
+  else{
+    if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) > 0){
+      // At least one message has been received since last read
+      res = HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &header, msg->data.u8);
+      msg->id = header.StdId;
+      msg->size = header.DLC;
     }
-    else{
-    	if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) > 0){
-    	  // At least one message has been received since last read
-    	  res = HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &msg->header, msg->data.u8);
-    	}
-    }
+  }
 	return res;
 }
 
@@ -147,7 +152,6 @@ void MX_CAN_Init(void)
       while(1);
   }
 
-
   /*
    * INITIALIZE INTERRUPT SYSTEM FOR CAN
    */
@@ -208,36 +212,44 @@ extern "C"{
 #endif
 
 void CEC_CAN_IRQHandler(void){
-  HAL_StatusTypeDef res;
-  uint32_t used_mailbox;
-  can_tx_msg tx_msg;
-  can_rx_msg rx_msg;
+	HAL_StatusTypeDef res;
+	uint32_t used_mailbox;
+	CAN_TxHeaderTypeDef tx_header;
+	CAN_RxHeaderTypeDef rx_header;
+	can_msg msg;
 
-  /* ************** RX ************** */
-  if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) > 0){
-    // At least one message has been received since last read
-    if(!messages_rx.is_full()){
-      //There is room in the program buffer
-      if((res = HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &rx_msg.header, rx_msg.data.u8)) == HAL_OK){
-        messages_rx.push(rx_msg);
-      }
-    }
-  }
+	/* ************** RX ************** */
+	if(HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) > 0){
+		// At least one message has been received since last read
+		if(!messages_rx.is_full()){
+			//There is room in the program buffer
+			if((res = HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &rx_header, msg.data.u8)) == HAL_OK){
+			  msg.id = rx_header.StdId;
+			  msg.size = rx_header.DLC;
+				messages_rx.push(msg);
+			}
+		}
+	}
 
-  /* ************** TX ************** */
-  if(CAN_check_request_done(&hcan) != -1){
-    // A TX mailbox completed a transmit or abort request, it is now free
-    if(!messages_tx.is_empty()){
-      tx_msg = messages_tx.pop();
-      HAL_CAN_AddTxMessage(&hcan, &tx_msg.header, tx_msg.data.u8, &used_mailbox);
-    }
-    else{
-      CAN_IRQ_TX_Empty_disable(&hcan);
-    }
-  }
+	/* ************** TX ************** */
+	if(CAN_check_request_done(&hcan) != -1){
+		// A TX mailbox completed a transmit or abort request, it is now free
+		if(!messages_tx.is_empty()){
+			msg = messages_tx.pop();
+			tx_header.DLC = msg.size;
+			tx_header.StdId = msg.id;
+			tx_header.IDE = CAN_ID_STD;
+			tx_header.RTR = CAN_RTR_DATA;
 
-  /* ******** ERROR HANDLING ******** */
-  //TODO
+			HAL_CAN_AddTxMessage(&hcan, &tx_header, msg.data.u8, &used_mailbox);
+		}
+		else{
+			CAN_IRQ_TX_Empty_disable(&hcan);
+		}
+	}
+
+	/* ******** ERROR HANDLING ******** */
+	//TODO
 }
 
 #ifdef __cplusplus

@@ -12,7 +12,7 @@
 #include "com/isotp/isotp.h"
 #include "com/proto/pb_encode.h"
 #include "com/proto/pb_decode.h"
-#include "com/proto/roboto.pb.h"
+#include "com/proto/outech.pb.h"
 #include "utility/ring_buffer.hpp"
 #include "config.h"
 
@@ -40,9 +40,11 @@ public:
     CAN_PB_RET_ERROR_RECEIVE  = -2,
     CAN_PB_RET_ERROR_TX_FULL  = -3,
     CAN_PB_RET_ERROR_RX_EMPTY = -4,
+    CAN_PB_RET_ERROR_RX_FULL  = -5,
     CAN_PB_RET_ERROR_ENCODE   = -10,
     CAN_PB_RET_ERROR_DECODE   = -11,
   };
+
 
   // Initializes the Link struct, and addresses
   Can_PB(uint16_t rx_addr, uint16_t tx_addr) : isotp_rx_addr(rx_addr), isotp_tx_addr(tx_addr){
@@ -55,10 +57,12 @@ public:
     return id == isotp_rx_addr;
   }
 
+
   // Updates the current reception state, returns true if the message id is for this instance of Can_PB
-  void update_rx_msg(can_rx_msg& msg){
-    isotp_on_can_message(&isotp_link, msg.data.u8, msg.header.DLC);
+  void update_rx_msg(can_msg& msg){
+    isotp_on_can_message(&isotp_link, msg.data.u8, msg.size);
   }
+
 
   int update(){
     BusMessage msg_rx;
@@ -85,7 +89,10 @@ public:
     }
 
     // If there is an available packet to read, and the reception buffer isn't full of BusMessages
-    if(isotp_link.receive_status == ISOTP_RECEIVE_STATUS_FULL && !pb_msg_rx_buffer.is_full()){
+    if(isotp_link.receive_status == ISOTP_RECEIVE_STATUS_FULL){
+      if(pb_msg_rx_buffer.is_full()){
+        return CAN_PB_RET_ERROR_RX_FULL;
+      }
       if(isotp_receive(&isotp_link, pb_data_rx, sizeof(pb_data_rx), &rx_size) == ISOTP_RET_OK){
         istream = pb_istream_from_buffer(pb_data_rx,  rx_size);
         if(!pb_decode(&istream, BusMessage_fields, &msg_rx)){
@@ -121,7 +128,6 @@ public:
     pb_msg_tx_buffer.push(msg);
     return CAN_PB_RET_OK;
   }
-
 
 
   bool is_rx_available(){

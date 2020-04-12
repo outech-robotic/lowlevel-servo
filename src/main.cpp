@@ -1,20 +1,16 @@
 #include "peripheral/tim.h"
-#include "peripheral/can.h"
-#include "peripheral/gpio.h"
-#include "utility/Metro.hpp"
-#include "utility/timing.h"
-#include "com/serial.hpp"
-#include "utility/macros.h"
-#include "config.h"
 #include "com/can_pb.hpp"
+#include "com/serial.hpp"
+#include "utility/timing.h"
+#include "utility/macros.h"
+#include "utility/Metro.hpp"
+#include "config.h"
 
 #include <cstdlib>
 
-#define STR(x)  #x
-#define XSTR(x) STR(x)
 
 
-can_rx_msg rx_msg;
+can_msg can_raw_msg;
 Serial serial;
 Metro wait_heartbeat(500);
 
@@ -44,7 +40,6 @@ int main(void)
  /**********************************************************************
   *                   CAN INTERFACE Variables & setup
   **********************************************************************/
-  can_rx_msg can_raw_msg;
   // Proto Buffers Messages
   BusMessage msg_rx = BusMessage_init_zero;
   BusMessage msg_heartbeat = BusMessage_init_zero;
@@ -66,7 +61,7 @@ int main(void)
 
     // Update ISOTP server
     if(CAN_receive_packet(&can_raw_msg) == HAL_OK){
-      if(canpb.match_id(can_raw_msg.header.StdId)){
+      if(canpb.match_id(can_raw_msg.id)){
         canpb.update_rx_msg(can_raw_msg);
       }
     }
@@ -87,9 +82,6 @@ int main(void)
             serial.println("Packet Received: PumpAndValve");
             serial.printf("ID: %u; ON/OFF: %s\r\n", msg_rx.message_content.pumpAndValve.id, msg_rx.message_content.pumpAndValve.on?"ON":"OFF");
             PWM_write(pins_pwm[msg_rx.message_content.pumpAndValve.id], msg_rx.message_content.pumpAndValve.on? CONST_PWM_MAX : 0);
-            break;
-
-          default:
             break;
         }
       }
